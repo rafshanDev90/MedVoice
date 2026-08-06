@@ -75,11 +75,21 @@ export interface Report {
   created_at: string;
 }
 
+export interface DashboardActivity {
+  id: string;
+  patient_name: string;
+  report_type: string;
+  created_at: string;
+}
+
 export interface DashboardStats {
   total_patients: number;
+  total_reports: number;
   consultations_this_week: number;
-  reports_generated: number;
+  total_transcriptions: number;
+  transcriptions_this_week: number;
   avg_transcript_length: number;
+  recent_activity: DashboardActivity[];
 }
 
 export interface ToastMessage {

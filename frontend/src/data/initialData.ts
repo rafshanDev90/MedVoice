@@ -1,4 +1,4 @@
-import { Patient, Report, DashboardStats } from '../types';
+import { Patient, Report } from '../types';
 
 export const INITIAL_PATIENTS: Patient[] = [
   {
@@ -193,10 +193,3 @@ export const INITIAL_REPORTS: Report[] = [
     created_at: '2026-07-25T14:10:00Z',
   },
 ];
-
-export const INITIAL_STATS: DashboardStats = {
-  total_patients: INITIAL_PATIENTS.length,
-  consultations_this_week: 12,
-  reports_generated: INITIAL_REPORTS.length,
-  avg_transcript_length: 382,
-};

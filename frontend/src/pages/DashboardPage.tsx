@@ -170,7 +170,7 @@ export const DashboardPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Reports Generated</p>
-              <h2 className="text-3xl font-black text-slate-900 mt-1">{stats.reports_generated}</h2>
+              <h2 className="text-3xl font-black text-slate-900 mt-1">{stats.total_reports}</h2>
             </div>
             <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-105 transition-transform">
               <FileText className="w-6 h-6" />

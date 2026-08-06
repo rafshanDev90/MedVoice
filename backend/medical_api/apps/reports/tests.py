@@ -168,3 +168,55 @@ class TranscriptionAPITests(APITestCase):
         r = self.client.get(self.transcriptions_url)
         self.assertEqual(r.status_code, status.HTTP_200_OK)
         self.assertEqual(len(r.data), 0)
+
+
+class DashboardStatsAPITests(APITestCase):
+    def setUp(self):
+        self.doctor = User.objects.create_user(
+            username='dr_test', email='dr.test@medireport.org', password='Pass12345!',
+            role='doctor', first_name='Test', last_name='Doctor',
+        )
+        self.other = User.objects.create_user(
+            username='dr_other', email='dr.other@medireport.org', password='Pass12345!',
+            role='doctor', first_name='Other', last_name='Doctor',
+        )
+        self.patient = Patient.objects.create(
+            doctor=self.doctor, first_name='Jane', last_name='Doe',
+            date_of_birth='1990-01-01', gender='Female', medical_record_number='MRN-DASH-01',
+        )
+        self.login_url = '/api/v1/auth/login/'
+        self.dashboard_url = '/api/v1/dashboard/stats/'
+
+    def _auth(self, user):
+        r = self.client.post(self.login_url, {'username': user.username, 'password': 'Pass12345!'})
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {r.data['access']}")
+
+    def test_anonymous_cannot_access_dashboard(self):
+        r = self.client.get(self.dashboard_url)
+        self.assertEqual(r.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_dashboard_returns_stats_for_authenticated_doctor(self):
+        self._auth(self.doctor)
+        MedicalReport.objects.create(
+            patient=self.patient, doctor=self.doctor, consultation_date='2026-08-06',
+            report_type='consultation', subjective='Test', assessment='OK', plan='Rest',
+        )
+        Transcription.objects.create(
+            patient=self.patient, doctor=self.doctor,
+            audio_file='test.wav', transcript='Patient has a headache that needs rest.',
+        )
+        r = self.client.get(self.dashboard_url)
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(r.data['total_patients'], 1)
+        self.assertEqual(r.data['total_reports'], 1)
+        self.assertTrue(r.data['consultations_this_week'] >= 1)
+        self.assertEqual(r.data['total_transcriptions'], 1)
+        self.assertTrue(r.data['avg_transcript_length'] > 0)
+        self.assertIn('recent_activity', r.data)
+
+    def test_dashboard_scoped_to_doctor(self):
+        self._auth(self.doctor)
+        r = self.client.get(self.dashboard_url)
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(r.data['total_patients'], 1)

@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Patient, Report, DashboardStats } from '../types';
 import { patientApi, reportApi, dashboardApi } from '../services/api';
-import { INITIAL_PATIENTS, INITIAL_REPORTS, INITIAL_STATS } from '../data/initialData';
 
 interface DataContextType {
   patients: Patient[];
@@ -25,9 +24,17 @@ interface DataContextType {
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [patients, setPatients] = useState<Patient[]>(INITIAL_PATIENTS);
-  const [reports, setReports] = useState<Report[]>(INITIAL_REPORTS);
-  const [stats, setStats] = useState<DashboardStats>(INITIAL_STATS);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
+  const [stats, setStats] = useState<DashboardStats>({
+    total_patients: 0,
+    total_reports: 0,
+    consultations_this_week: 0,
+    total_transcriptions: 0,
+    transcriptions_this_week: 0,
+    avg_transcript_length: 0,
+    recent_activity: [],
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   const refreshAll = useCallback(async () => {
@@ -82,7 +89,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setReports((prev) => [newRep, ...prev]);
     setStats((prev) => ({
       ...prev,
-      reports_generated: prev.reports_generated + 1,
+      total_reports: prev.total_reports + 1,
       consultations_this_week: prev.consultations_this_week + 1,
     }));
     return newRep;
@@ -97,7 +104,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const deleteReport = async (id: string): Promise<void> => {
     await reportApi.deleteReport(id);
     setReports((prev) => prev.filter((r) => r.id !== id));
-    setStats((prev) => ({ ...prev, reports_generated: Math.max(0, prev.reports_generated - 1) }));
+    setStats((prev) => ({ ...prev, total_reports: Math.max(0, prev.total_reports - 1) }));
   };
 
   const getReportById = (id: string) => {

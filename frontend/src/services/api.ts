@@ -1,6 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { AuthTokens, LoginCredentials, Patient, Report, User, DashboardStats } from '../types';
-import { INITIAL_REPORTS } from '../data/initialData';
 
 const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 
@@ -62,7 +61,6 @@ apiClient.interceptors.response.use(
 
 // Mock Storage key helper for full offline / client fallback state
 const STORAGE_KEYS = {
-  REPORTS: 'medireport_reports',
   USER: 'medireport_user',
 };
 
@@ -81,11 +79,6 @@ function setStoredData<T>(key: string, value: T): void {
   } catch (err) {
     console.error('Failed to save to localStorage', err);
   }
-}
-
-// Ensure initial seed data in localStorage
-if (!localStorage.getItem(STORAGE_KEYS.REPORTS)) {
-  setStoredData(STORAGE_KEYS.REPORTS, INITIAL_REPORTS);
 }
 
 // Auth API
@@ -175,20 +168,7 @@ export const reportApi = {
 // Dashboard API
 export const dashboardApi = {
   async getStats(): Promise<DashboardStats> {
-    try {
-      const response = await apiClient.get('/dashboard/stats/');
-      return response.data;
-    } catch {
-      const patients = await patientApi.getPatients().catch(() => [] as Patient[]);
-      const reports = getStoredData<Report[]>(STORAGE_KEYS.REPORTS, INITIAL_REPORTS);
-      const totalWords = reports.reduce((acc, r) => acc + (r.word_count || 0), 0);
-
-      return {
-        total_patients: patients.length,
-        consultations_this_week: reports.length + 3,
-        reports_generated: reports.length,
-        avg_transcript_length: reports.length ? Math.round(totalWords / reports.length) : 0,
-      };
-    }
+    const response = await apiClient.get('/dashboard/stats/');
+    return response.data;
   },
 };
