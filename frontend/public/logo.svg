@@ -1,0 +1,16 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="512" height="512" rx="80" fill="#2563eb"/>
+  
+  <!-- Speech bubble outline -->
+  <path d="M256 120 C344 120 416 184 416 272 C416 360 344 424 256 424 C226 424 200 416 178 402 L100 456 L120 406 C88 360 88 310 108 272 C108 310 120 348 142 372 C156 390 174 402 196 406 C212 420 230 424 250 424 L240 412 C256 420 274 424 294 420 C324 412 350 382 360 350 C370 318 364 284 342 260 C320 236 282 228 256 230 Z" fill="white"/>
+  
+  <!-- Medical cross symbol -->
+  <rect x="218" y="250" width="76" height="46" rx="8" fill="white"/>
+  <rect x="238" y="230" width="36" height="86" rx="6" fill="white"/>
+  
+  <!-- Text label -->
+  <text x="256" y="470" font-family="Arial, sans-serif" font-size="48" fill="white" text-anchor="middle" font-weight="bold">
+    MedVoice
+  </text>
+</svg>
