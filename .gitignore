@@ -19,3 +19,5 @@ logs/
 node_modules/
 build/
 dist/
+deploy.sh
+deploy.sh.vps
