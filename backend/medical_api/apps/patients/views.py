@@ -3,8 +3,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
-from .models import Patient
-from .serializers import PatientSerializer, PatientListSerializer
+from medical_api.apps.patients.models import Patient
+from medical_api.apps.patients.serializers import PatientSerializer, PatientListSerializer
 
 
 class PatientViewSet(viewsets.ModelViewSet):

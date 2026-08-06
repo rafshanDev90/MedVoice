@@ -3,11 +3,10 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.shortcuts import get_object_or_404
-from patients.models import Patient
+from medical_api.apps.patients.models import Patient
+from medical_api.apps.patients.serializers import PatientSerializer, PatientListSerializer
 from .models import Transcription, MedicalReport
 from .serializers import (
-    PatientSerializer,
-    PatientListSerializer,
     TranscriptionSerializer,
     TranscriptionCreateSerializer,
     MedicalReportSerializer,

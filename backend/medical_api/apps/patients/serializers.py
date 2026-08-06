@@ -3,7 +3,7 @@ from .models import Patient
 
 
 class PatientSerializer(serializers.ModelSerializer):
-    full_name = serializers.ReadOnlyField(source='full_name')
+    full_name = serializers.ReadOnlyField()
 
     class Meta:
         model = Patient
@@ -12,7 +12,7 @@ class PatientSerializer(serializers.ModelSerializer):
 
 
 class PatientListSerializer(serializers.ModelSerializer):
-    full_name = serializers.ReadOnlyField(source='full_name')
+    full_name = serializers.ReadOnlyField()
 
     class Meta:
         model = Patient

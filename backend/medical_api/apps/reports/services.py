@@ -1,6 +1,5 @@
 import os
 import tempfile
-from faster_whisper import WhisperModel
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
@@ -9,6 +8,7 @@ from django.conf import settings
 
 WHISPER_MODEL = None
 WHISPER_MODEL_SIZE = None
+ONNX_MODEL = None
 
 
 def get_whisper_model():
@@ -24,8 +24,20 @@ def get_whisper_model():
     return WHISPER_MODEL
 
 
+def get_onnx_model():
+    global ONNX_MODEL
+    if ONNX_MODEL is None:
+        from onnx_asr import AutoModel
+        ONNX_MODEL = AutoModel.from_pretrained("parakeet-tdt-0.6b-v3")
+    return ONNX_MODEL
+
+
 def transcribe_audio(audio_file, language='', model_size='base'):
-    model = get_whisper_model()
+    try:
+        from faster_whisper import WhisperModel
+        use_faster_whisper = True
+    except ImportError:
+        use_faster_whisper = False
 
     temp_path = None
     if hasattr(audio_file, 'temporary_file_path'):
@@ -36,24 +48,34 @@ def transcribe_audio(audio_file, language='', model_size='base'):
                 tmp.write(chunk)
             temp_path = tmp.name
 
-    segments, info = model.transcribe(temp_path, language=language or None, beam_size=5)
+    if use_faster_whisper:
+        model = get_whisper_model()
+        segments, info = model.transcribe(temp_path, language=language or None, beam_size=5)
 
-    transcript_parts = []
-    segment_list = []
-    for segment in segments:
-        text = segment.text.strip()
-        if text:
-            transcript_parts.append(text)
-            segment_list.append({
-                'start': segment.start,
-                'end': segment.end,
-                'text': text,
-            })
+        transcript_parts = []
+        segment_list = []
+        for segment in segments:
+            text = segment.text.strip()
+            if text:
+                transcript_parts.append(text)
+                segment_list.append({
+                    'start': segment.start,
+                    'end': segment.end,
+                    'text': text,
+                })
 
-    transcript = ' '.join(transcript_parts)
-    duration = info.duration if info else 0.0
-    detected_language = info.language if info else language or 'unknown'
-    model_used = f'faster-whisper-{model_size}'
+        transcript = ' '.join(transcript_parts)
+        duration = info.duration if info else 0.0
+        detected_language = info.language if info else language or 'unknown'
+        model_used = f'faster-whisper-{model_size}'
+    else:
+        model = get_onnx_model()
+        result = model.transcribe(temp_path)
+        transcript = result.text
+        duration = result.duration if hasattr(result, 'duration') else 0.0
+        detected_language = language or 'unknown'
+        model_used = 'onnx-asr-parakeet'
+        segment_list = []
 
     if temp_path and audio_file.name != temp_path:
         os.unlink(temp_path)

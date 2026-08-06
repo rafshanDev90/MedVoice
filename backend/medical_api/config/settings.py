@@ -2,6 +2,10 @@ import os
 from datetime import timedelta
 from pathlib import Path
 from decouple import config
+import dj_database_url
+from dotenv import load_dotenv
+
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -20,9 +24,9 @@ INSTALLED_APPS = [
     'drf_spectacular',
     'django_filters',
     'corsheaders',
-    'apps.patients',
-    'apps.reports',
-    'apps.auth',
+    'medical_api.apps.patients',
+    'medical_api.apps.reports',
+    'medical_api.apps.accounts',
 ]
 
 MIDDLEWARE = [
@@ -36,7 +40,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'config.urls'
+ROOT_URLCONF = 'medical_api.config.urls'
 
 TEMPLATES = [
     {
@@ -55,17 +59,14 @@ TEMPLATES = [
 ]
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME', default='medical_report_db'),
-        'USER': config('DB_USER', default='postgres'),
-        'PASSWORD': config('DB_PASSWORD', default='postgres'),
-        'HOST': config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default='5432'),
-    }
+    'default': dj_database_url.config(
+        default=os.environ.get('DATABASE_URL', 'sqlite:///db.sqlite3'),
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
 }
 
-AUTH_USER_MODEL = 'auth.User'
+AUTH_USER_MODEL = 'accounts.User'
 
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
@@ -112,6 +113,19 @@ WHISPER_DEVICE = config('WHISPER_DEVICE', default='cpu')
 WHISPER_COMPUTE_TYPE = config('WHISPER_COMPUTE_TYPE', default='int8')
 
 CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='http://localhost:3000', cast=lambda v: [s.strip() for s in v.split(',')])
+
+STORAGE_BACKEND = config('STORAGE_BACKEND', default='local')
+
+if STORAGE_BACKEND == 'supabase':
+    DEFAULT_FILE_STORAGE = 'django_supabase_storage.SupabaseMediaStorage'
+    STATICFILES_STORAGE = 'django_supabase_storage.SupabaseStaticStorage'
+    SUPABASE_URL = config('SUPABASE_URL', default='')
+    SUPABASE_KEY = config('SUPABASE_KEY', default='')
+    SUPABASE_MEDIA_BUCKET = config('SUPABASE_MEDIA_BUCKET', default='media')
+    SUPABASE_STATIC_BUCKET = config('SUPABASE_STATIC_BUCKET', default='static')
+else:
+    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+    STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
 LOGGING = {
     'version': 1,
