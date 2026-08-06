@@ -148,65 +148,27 @@ export const patientApi = {
 // Report API
 export const reportApi = {
   async getReports(): Promise<Report[]> {
-    try {
-      const response = await apiClient.get('/reports/');
-      return response.data;
-    } catch {
-      return getStoredData<Report[]>(STORAGE_KEYS.REPORTS, INITIAL_REPORTS);
-    }
+    const response = await apiClient.get('/reports/');
+    return response.data;
   },
 
-  async getReportById(id: string): Promise<Report | null> {
-    try {
-      const response = await apiClient.get(`/reports/${id}/`);
-      return response.data;
-    } catch {
-      const reports = getStoredData<Report[]>(STORAGE_KEYS.REPORTS, INITIAL_REPORTS);
-      return reports.find((r) => r.id === id) || null;
-    }
+  async getReportById(id: string): Promise<Report> {
+    const response = await apiClient.get(`/reports/${id}/`);
+    return response.data;
   },
 
   async createReport(reportData: Omit<Report, 'id' | 'created_at'>): Promise<Report> {
-    const newReport: Report = {
-      ...reportData,
-      id: 'rep-' + Date.now().toString(36),
-      created_at: new Date().toISOString(),
-    };
-
-    try {
-      const response = await apiClient.post('/reports/', newReport);
-      return response.data;
-    } catch {
-      const reports = getStoredData<Report[]>(STORAGE_KEYS.REPORTS, INITIAL_REPORTS);
-      const updated = [newReport, ...reports];
-      setStoredData(STORAGE_KEYS.REPORTS, updated);
-      return newReport;
-    }
+    const response = await apiClient.post('/reports/', reportData);
+    return response.data;
   },
 
   async updateReport(id: string, updates: Partial<Report>): Promise<Report> {
-    try {
-      const response = await apiClient.patch(`/reports/${id}/`, updates);
-      return response.data;
-    } catch {
-      const reports = getStoredData<Report[]>(STORAGE_KEYS.REPORTS, INITIAL_REPORTS);
-      const index = reports.findIndex((r) => r.id === id);
-      if (index === -1) throw new Error('Report not found');
-      const updatedReport = { ...reports[index], ...updates };
-      reports[index] = updatedReport;
-      setStoredData(STORAGE_KEYS.REPORTS, reports);
-      return updatedReport;
-    }
+    const response = await apiClient.patch(`/reports/${id}/`, updates);
+    return response.data;
   },
 
   async deleteReport(id: string): Promise<void> {
-    try {
-      await apiClient.delete(`/reports/${id}/`);
-    } catch {
-      const reports = getStoredData<Report[]>(STORAGE_KEYS.REPORTS, INITIAL_REPORTS);
-      const filtered = reports.filter((r) => r.id !== id);
-      setStoredData(STORAGE_KEYS.REPORTS, filtered);
-    }
+    await apiClient.delete(`/reports/${id}/`);
   },
 };
 

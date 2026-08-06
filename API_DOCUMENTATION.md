@@ -287,37 +287,51 @@ WS /api/v1/transcribe/stream/
 
 ### 4. Medical Report Generation
 
+All report endpoints require `Authorization: Bearer <token>`. Reports are scoped to the logged-in doctor — a doctor can only access their own reports and patients.
+
 #### Generate Report from Transcript
 
 ```
-POST /api/v1/reports/generate/
+POST /api/v1/reports/
 ```
+
+Creates a new medical report. The `doctor` is auto-assigned from the JWT user. The `patient` must belong to the logged-in doctor (returns 403 otherwise).
 
 **Request Body**
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `patient_id` | integer | Yes | Patient ID |
-| `doctor_id` | integer | Yes | Doctor (user) ID |
-| `transcript` | string | Yes | Transcribed text from STT |
-| `consultation_date` | date | Yes | Date of consultation |
-| `report_type` | string | No | `epicrisis`, `consultation`, `follow_up`, `discharge` (default: `consultation`) |
+| `patient` | integer | Yes | Patient ID (must belong to the doctor) |
+| `consultation_date` | date | No | Date of consultation (defaults to today) |
+| `report_type` | string | No | `consultation`, `epicrisis`, `follow_up`, `discharge` (default: `consultation`) |
+| `subjective` | string | No | S — Patient's description of symptoms |
+| `objective` | string | No | O — Clinical findings and vitals |
+| `assessment` | string | No | A — Diagnosis and clinical assessment |
+| `plan` | string | No | P — Treatment plan |
+| `raw_transcript` | string | No | Raw transcribed text |
+| `soap` | object | No | Alternative to individual SOAP fields — nested `{subjective, objective, assessment, plan}` |
 
 **Response (201)**
 
 ```json
 {
-  "id": 1,
+  "id": "2c9b193f-6a60-4533-9d48-616a45687523",
+  "patient": 1,
+  "patient_name": "Jane Doe",
+  "patient_mrn": "MRN-TEST-01",
   "patient_id": 1,
+  "doctor": 2,
+  "doctor_name": "dr_smith",
   "doctor_id": 2,
   "consultation_date": "2026-08-06",
   "report_type": "consultation",
-  "subjective": "Patient reports chest pain...",
-  "objective": "Vitals: BP 120/80, HR 72...",
-  "assessment": "Possible angina...",
-  "plan": "Order ECG, prescribe aspirin...",
-  "raw_transcript": "Patient reports chest pain...",
-  "created_at": "2026-08-06T12:00:00Z"
+  "subjective": "Headache",
+  "objective": "Normal vitals",
+  "assessment": "Migraine",
+  "plan": "Rest",
+  "raw_transcript": "Patient has a headache.",
+  "created_at": "2026-08-06T12:00:00Z",
+  "updated_at": "2026-08-06T12:00:00Z"
 }
 ```
 
@@ -327,17 +341,35 @@ POST /api/v1/reports/generate/
 GET /api/v1/reports/
 ```
 
+Returns only the logged-in doctor's reports. No pagination — returns a full JSON array.
+
 **Query Parameters**
 
 | Param | Type | Description |
 |-------|------|-------------|
-| `patient_id` | integer | Filter by patient |
-| `doctor_id` | integer | Filter by doctor |
+| `patient` | integer | Filter by patient |
 | `report_type` | string | Filter by type |
-| `date_from` | date | Start date filter |
-| `date_to` | date | End date filter |
-| `page` | integer | Pagination page |
-| `page_size` | integer | Items per page |
+| `consultation_date` | date | Filter by date |
+| `search` | string | Search by patient name or assessment |
+
+**Response (200)**
+
+```json
+[
+  {
+    "id": "2c9b193f-6a60-4533-9d48-616a45687523",
+    "patient_name": "Jane Doe",
+    "patient_mrn": "MRN-TEST-01",
+    "doctor_name": "dr_smith",
+    "consultation_date": "2026-08-06",
+    "report_type": "consultation",
+    "subjective": "Headache",
+    "assessment": "Migraine",
+    "plan": "Rest",
+    "created_at": "2026-08-06T12:00:00Z"
+  }
+]
+```
 
 #### Get Report Detail
 
@@ -345,11 +377,17 @@ GET /api/v1/reports/
 GET /api/v1/reports/{id}/
 ```
 
+Returns 404 if the report doesn't belong to the logged-in doctor.
+
+**Response (200)** — Same as create response above.
+
 #### Update Report
 
 ```
-PUT /api/v1/reports/{id}/
+PATCH /api/v1/reports/{id}/
 ```
+
+Accepts any subset of the create fields. SOAP can be sent as a nested `soap` object or as individual fields.
 
 #### Delete Report
 
@@ -357,15 +395,15 @@ PUT /api/v1/reports/{id}/
 DELETE /api/v1/reports/{id}/
 ```
 
----
+Returns 204 No Content. Returns 404 if the report belongs to a different doctor.
 
-### 5. Excel Report Export
-
-#### Export Single Report to Excel
+#### Export Report to Excel
 
 ```
 GET /api/v1/reports/{id}/export/excel/
 ```
+
+Returns a `.xlsx` file download with Patient Info and Report sheets.
 
 **Response:** `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`
 

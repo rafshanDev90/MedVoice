@@ -2,6 +2,13 @@ from rest_framework import serializers
 from .models import Transcription, MedicalReport
 
 
+class SOAPSerializer(serializers.Serializer):
+    subjective = serializers.CharField(required=False, allow_blank=True)
+    objective = serializers.CharField(required=False, allow_blank=True)
+    assessment = serializers.CharField(required=False, allow_blank=True)
+    plan = serializers.CharField(required=False, allow_blank=True)
+
+
 class TranscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Transcription
@@ -18,6 +25,9 @@ class TranscriptionCreateSerializer(serializers.ModelSerializer):
 class MedicalReportSerializer(serializers.ModelSerializer):
     patient_name = serializers.ReadOnlyField(source='patient.full_name')
     doctor_name = serializers.ReadOnlyField(source='doctor.username')
+    patient_id = serializers.ReadOnlyField(source='patient.id')
+    patient_mrn = serializers.ReadOnlyField(source='patient.medical_record_number')
+    doctor_id = serializers.ReadOnlyField(source='doctor.id')
 
     class Meta:
         model = MedicalReport
@@ -26,13 +36,21 @@ class MedicalReportSerializer(serializers.ModelSerializer):
 
 
 class MedicalReportCreateSerializer(serializers.ModelSerializer):
+    doctor_name = serializers.ReadOnlyField(source='doctor.username')
+    soap = SOAPSerializer(required=False)
+
     class Meta:
         model = MedicalReport
-        fields = ['patient', 'consultation_date', 'report_type', 'subjective', 'objective', 'assessment', 'plan', 'raw_transcript']
+        fields = ['patient', 'consultation_date', 'report_type', 'subjective', 'objective', 'assessment', 'plan', 'raw_transcript', 'doctor_name', 'soap']
 
+    def create(self, validated_data):
+        soap_data = validated_data.pop('soap', None)
+        if soap_data:
+            validated_data.update(soap_data)
+        return super().create(validated_data)
 
-class SOAPSerializer(serializers.Serializer):
-    subjective = serializers.CharField(required=False, allow_blank=True)
-    objective = serializers.CharField(required=False, allow_blank=True)
-    assessment = serializers.CharField(required=False, allow_blank=True)
-    plan = serializers.CharField(required=False, allow_blank=True)
+    def update(self, instance, validated_data):
+        soap_data = validated_data.pop('soap', None)
+        if soap_data:
+            validated_data.update(soap_data)
+        return super().update(instance, validated_data)

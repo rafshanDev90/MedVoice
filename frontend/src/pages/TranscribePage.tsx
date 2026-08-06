@@ -235,20 +235,15 @@ export const TranscribePage: React.FC = () => {
       const formattedDuration = `${Math.floor(durationSeconds / 60)}m ${durationSeconds % 60}s`;
 
       const newRep = await addReport({
-        patient_id: selectedPatient.id,
-        patient_name: selectedPatient.full_name,
-        patient_mrn: selectedPatient.mrn,
-        doctor_id: user?.id || 'doc-101',
-        doctor_name: user?.full_name || 'Dr. Sarah Jenkins',
-        type: reportType,
-        date: new Date().toISOString().split('T')[0],
-        duration: formattedDuration,
-        duration_seconds: durationSeconds,
-        word_count: wordCount,
-        status: 'Completed',
-        soap: currentSoap,
+        patient: selectedPatient.id,
+        consultation_date: new Date().toISOString().split('T')[0],
+        report_type: reportType,
+        subjective: currentSoap.subjective,
+        objective: currentSoap.objective,
+        assessment: currentSoap.assessment,
+        plan: currentSoap.plan,
         raw_transcript: finalText,
-      });
+      } as any);
 
       showSuccess(`Saved SOAP report for ${selectedPatient.full_name}!`);
       navigate(`/reports/${newRep.id}`);
