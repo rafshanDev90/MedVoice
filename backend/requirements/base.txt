@@ -1,0 +1,13 @@
+Django>=5.0,<6.0
+djangorestframework>=3.15
+drf-spectacular>=0.27
+django-filter>=23.0
+djangorestframework-simplejwt>=5.3
+openpyxl>=3.1
+xlsxwriter>=3.1
+faster-whisper>=0.10
+openai-whisper>=20231117
+python-decouple>=3.8
+Pillow>=10.0
+django-cors-headers>=4.3
+gunicorn>=21.2

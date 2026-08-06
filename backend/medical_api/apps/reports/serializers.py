@@ -1,0 +1,38 @@
+from rest_framework import serializers
+from .models import Transcription, MedicalReport
+
+
+class TranscriptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Transcription
+        fields = '__all__'
+        read_only_fields = ['id', 'transcript', 'language', 'duration_seconds', 'segments', 'model_used', 'created_at']
+
+
+class TranscriptionCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Transcription
+        fields = ['patient', 'audio_file', 'language', 'model_size']
+
+
+class MedicalReportSerializer(serializers.ModelSerializer):
+    patient_name = serializers.ReadOnlyField(source='patient.full_name')
+    doctor_name = serializers.ReadOnlyField(source='doctor.username')
+
+    class Meta:
+        model = MedicalReport
+        fields = '__all__'
+        read_only_fields = ['id', 'raw_transcript', 'transcript_segments', 'excel_file', 'created_at', 'updated_at']
+
+
+class MedicalReportCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MedicalReport
+        fields = ['patient', 'consultation_date', 'report_type', 'subjective', 'objective', 'assessment', 'plan', 'raw_transcript']
+
+
+class SOAPSerializer(serializers.Serializer):
+    subjective = serializers.CharField(required=False, allow_blank=True)
+    objective = serializers.CharField(required=False, allow_blank=True)
+    assessment = serializers.CharField(required=False, allow_blank=True)
+    plan = serializers.CharField(required=False, allow_blank=True)
