@@ -25,5 +25,72 @@ jobs:
           envs: VITE_API_BASE_URL
           script: |
             cd /home/MedVoice
-            chmod +x deploy.sh
-            ./deploy.sh
+            git fetch --depth=5 origin main
+            
+            # Detect changes
+            PREV_HEAD=$(git rev-parse HEAD 2>/dev/null || echo "")
+            git reset --hard origin/main
+            
+            BACKEND_CHANGED=false
+            FRONTEND_CHANGED=false
+            
+            if [ -n "$PREV_HEAD" ]; then
+              CHANGED_FILES=$(git diff --name-only "$PREV_HEAD" HEAD 2>/dev/null || echo "")
+              if echo "$CHANGED_FILES" | grep -q "backend/" || [ -z "$CHANGED_FILES" ]; then
+                BACKEND_CHANGED=true
+              fi
+              if echo "$CHANGED_FILES" | grep -q "frontend/" || [ -z "$CHANGED_FILES" ]; then
+                FRONTEND_CHANGED=true
+              fi
+            else
+              BACKEND_CHANGED=true
+              FRONTEND_CHANGED=true
+            fi
+            
+            # Backend deployment
+            if [ "$BACKEND_CHANGED" = "true" ]; then
+              echo "⚙️  Updating backend..."
+              cd /home/MedVoice/backend
+              source venv/bin/activate
+              
+              # Check requirements hash
+              REQ_HASH_FILE="/tmp/requirements_hash"
+              CURRENT_HASH=$(md5sum requirements/base.txt | awk '{print $1}')
+              SAVED_HASH=""
+              if [ -f "$REQ_HASH_FILE" ]; then
+                SAVED_HASH=$(cat "$REQ_HASH_FILE")
+              fi
+              
+              if [ "$CURRENT_HASH" != "$SAVED_HASH" ]; then
+                echo "📦 Installing Python dependencies..."
+                pip install --no-input -r requirements/base.txt --no-compile
+                echo "$CURRENT_HASH" > "$REQ_HASH_FILE"
+              else
+                echo "✅ Python dependencies unchanged"
+              fi
+              
+              python manage.py migrate
+              python manage.py collectstatic --noinput
+              deactivate
+            else
+              echo "✅ Backend unchanged"
+            fi
+            
+            # Frontend deployment
+            if [ "$FRONTEND_CHANGED" = "true" ]; then
+              echo "🎨 Building frontend..."
+              cd /home/MedVoice/frontend
+              if [ ! -d "node_modules" ]; then
+                npm install --silent --no-audit --no-fund --ignore-scripts
+              fi
+              npm run build
+              echo "✅ Frontend built"
+            else
+              echo "✅ Frontend unchanged"
+            fi
+            
+            # Restart services
+            echo "🔄 Restarting services..."
+            sudo systemctl restart gunicorn
+            sudo nginx -t && sudo systemctl reload nginx
+            echo "✅ Deployment complete!"
