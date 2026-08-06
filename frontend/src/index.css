@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50: #f0f4fa;
+  --color-brand-100: #dbe4f3;
+  --color-brand-200: #bcd0e8;
+  --color-brand-500: #3b65b0;
+  --color-brand-600: #2F5496;
+  --color-brand-700: #244278;
+  --color-brand-800: #1c325c;
+  --color-brand-900: #152542;
+  --color-medical-bg: #F8FAFC;
+}
+
+@layer base {
+  body {
+    background-color: #F8FAFC;
+    color: #1E293B;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1 {
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.25;
+  }
+  h2 {
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  h3 {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+}

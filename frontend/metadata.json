@@ -1,0 +1,10 @@
+{
+  "name": "MediReport",
+  "description": "Medical report management system with speech-to-text consultation recording, SOAP report generation, Excel export, and patient record tracking.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
