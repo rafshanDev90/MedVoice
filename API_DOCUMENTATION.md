@@ -96,33 +96,46 @@ GET /api/v1/health/
 POST /api/v1/patients/
 ```
 
+Requires `Authorization: Bearer <token>`. The logged-in doctor is auto-assigned as the patient's owner.
+
 **Request Body**
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `first_name` | string | Yes | Patient first name |
-| `last_name` | string | Yes | Patient last name |
-| `date_of_birth` | date | Yes | Patient date of birth |
-| `gender` | string | Yes | M / F / Other |
+| `full_name` | string | Yes* | Patient full name (e.g., "John Doe"); alternative to `first_name`/`last_name` |
+| `first_name` | string | No* | First name (when not using `full_name`) |
+| `last_name` | string | No | Last name |
+| `date_of_birth` | date | Yes | Patient date of birth (YYYY-MM-DD) |
+| `gender` | string | Yes | Male / Female / Other |
 | `phone` | string | No | Contact phone |
 | `email` | string | No | Contact email |
 | `address` | string | No | Home address |
-| `medical_record_number` | string | No | Hospital MRN |
+| `emergency_contact` | string | No | Emergency contact |
+| `blood_group` | string | No | Blood group (e.g., A+, O-) |
+| `mrn` | string | No | Hospital MRN. Auto-generated as `MRN-XXXXX` if omitted or taken |
+
+*Either `full_name` or `first_name` is required.
 
 **Response (201)**
 
 ```json
 {
   "id": 1,
+  "mrn": "MRN-35570",
+  "full_name": "John Doe",
   "first_name": "John",
   "last_name": "Doe",
   "date_of_birth": "1985-03-15",
-  "gender": "M",
+  "gender": "Male",
   "phone": "+1234567890",
   "email": "john@example.com",
   "address": "123 Main St",
-  "medical_record_number": "MRN-001",
-  "created_at": "2026-08-06T12:00:00Z"
+  "emergency_contact": "Jane Doe",
+  "blood_group": "O+",
+  "doctor": 2,
+  "doctor_name": "dr_smith",
+  "created_at": "2026-08-06T12:00:00Z",
+  "updated_at": "2026-08-06T12:00:00Z"
 }
 ```
 
@@ -132,33 +145,39 @@ POST /api/v1/patients/
 GET /api/v1/patients/
 ```
 
+Requires `Authorization: Bearer <token>`. Returns only the logged-in doctor's patients. No pagination — returns the full list as a JSON array.
+
 **Query Parameters**
 
 | Param | Type | Description |
 |-------|------|-------------|
-| `search` | string | Search by name or MRN |
-| `gender` | string | Filter by gender |
-| `page` | integer | Pagination page |
-| `page_size` | integer | Items per page (default: 25) |
+| `search` | string | Search by name, MRN, email, or phone |
+| `gender` | string | Filter by gender (Male / Female / Other) |
+| `blood_group` | string | Filter by blood group |
 
 **Response (200)**
 
 ```json
-{
-  "count": 50,
-  "next": "http://localhost:8000/api/v1/patients/?page=2",
-  "previous": null,
-  "results": [
-    {
-      "id": 1,
-      "first_name": "John",
-      "last_name": "Doe",
-      "date_of_birth": "1985-03-15",
-      "gender": "M",
-      "medical_record_number": "MRN-001"
-    }
-  ]
-}
+[
+  {
+    "id": 1,
+    "mrn": "MRN-35570",
+    "full_name": "John Doe",
+    "first_name": "John",
+    "last_name": "Doe",
+    "date_of_birth": "1985-03-15",
+    "gender": "Male",
+    "phone": "+1234567890",
+    "email": "john@example.com",
+    "address": "123 Main St",
+    "emergency_contact": "Jane Doe",
+    "blood_group": "O+",
+    "doctor": 2,
+    "doctor_name": "dr_smith",
+    "created_at": "2026-08-06T12:00:00Z",
+    "updated_at": "2026-08-06T12:00:00Z"
+  }
+]
 ```
 
 #### Get Patient Detail
@@ -167,7 +186,40 @@ GET /api/v1/patients/
 GET /api/v1/patients/{id}/
 ```
 
+Requires `Authorization: Bearer <token>`. Returns 404 if the patient belongs to a different doctor.
+
 **Response (200)** — Same as create response above.
+
+#### Update Patient
+
+```
+PATCH /api/v1/patients/{id}/
+PUT /api/v1/patients/{id}/
+```
+
+Requires `Authorization: Bearer <token>`. Accepts any subset of the create fields. Returns the updated patient object.
+
+#### Delete Patient
+
+```
+DELETE /api/v1/patients/{id}/
+```
+
+Requires `Authorization: Bearer <token>`. Returns 204 No Content.
+
+#### List Patient Reports
+
+```
+GET /api/v1/patients/{id}/reports/
+```
+
+Requires `Authorization: Bearer <token>`. Returns all medical reports for the patient. Returns 404 if the patient belongs to a different doctor.
+
+**Response (200)**
+
+```json
+[]
+```
 
 ---
 
@@ -411,14 +463,17 @@ GET /api/v1/doctors/{doctor_id}/report-summary/
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | AutoField | Primary key |
+| `doctor` | ForeignKey | Owning doctor (auto-assigned from JWT user) |
 | `first_name` | CharField | Patient first name |
 | `last_name` | CharField | Patient last name |
 | `date_of_birth` | DateField | Date of birth |
-| `gender` | CharField | M / F / Other |
+| `gender` | CharField | Male / Female / Other |
 | `phone` | CharField | Contact phone |
 | `email` | EmailField | Contact email |
 | `address` | TextField | Home address |
-| `medical_record_number` | CharField | Unique hospital MRN |
+| `emergency_contact` | CharField | Emergency contact |
+| `blood_group` | CharField | Blood group (e.g., A+, O-) |
+| `medical_record_number` | CharField | Unique hospital MRN (auto-generated `MRN-XXXXX`) |
 | `created_at` | DateTimeField | Auto-generated |
 | `updated_at` | DateTimeField | Auto-updated |
 

@@ -4,7 +4,6 @@ from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.shortcuts import get_object_or_404
 from medical_api.apps.patients.models import Patient
-from medical_api.apps.patients.serializers import PatientSerializer, PatientListSerializer
 from .models import Transcription, MedicalReport
 from .serializers import (
     TranscriptionSerializer,
@@ -13,18 +12,6 @@ from .serializers import (
     MedicalReportCreateSerializer,
     SOAPSerializer,
 )
-
-
-class PatientViewSet(viewsets.ModelViewSet):
-    queryset = Patient.objects.all()
-    serializer_class = PatientSerializer
-    filterset_fields = ['first_name', 'last_name', 'gender', 'medical_record_number']
-    search_fields = ['first_name', 'last_name', 'medical_record_number']
-
-    def get_serializer_class(self):
-        if self.action == 'list':
-            return PatientListSerializer
-        return PatientSerializer
 
 
 class TranscriptionViewSet(viewsets.ViewSet):
@@ -61,6 +48,7 @@ class TranscriptionViewSet(viewsets.ViewSet):
 class MedicalReportViewSet(viewsets.ModelViewSet):
     queryset = MedicalReport.objects.select_related('patient', 'doctor').prefetch_related('transcriptions')
     serializer_class = MedicalReportSerializer
+    pagination_class = None
     filterset_fields = ['patient', 'doctor', 'report_type', 'consultation_date']
     search_fields = ['patient__first_name', 'patient__last_name', 'assessment', 'plan']
 

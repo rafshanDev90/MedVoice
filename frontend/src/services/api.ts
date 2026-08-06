@@ -1,6 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { AuthTokens, LoginCredentials, Patient, Report, User, DashboardStats } from '../types';
-import { INITIAL_PATIENTS, INITIAL_REPORTS } from '../data/initialData';
+import { INITIAL_REPORTS } from '../data/initialData';
 
 const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 
@@ -62,7 +62,6 @@ apiClient.interceptors.response.use(
 
 // Mock Storage key helper for full offline / client fallback state
 const STORAGE_KEYS = {
-  PATIENTS: 'medireport_patients',
   REPORTS: 'medireport_reports',
   USER: 'medireport_user',
 };
@@ -85,9 +84,6 @@ function setStoredData<T>(key: string, value: T): void {
 }
 
 // Ensure initial seed data in localStorage
-if (!localStorage.getItem(STORAGE_KEYS.PATIENTS)) {
-  setStoredData(STORAGE_KEYS.PATIENTS, INITIAL_PATIENTS);
-}
 if (!localStorage.getItem(STORAGE_KEYS.REPORTS)) {
   setStoredData(STORAGE_KEYS.REPORTS, INITIAL_REPORTS);
 }
@@ -125,66 +121,27 @@ export const authApi = {
 // Patient API
 export const patientApi = {
   async getPatients(): Promise<Patient[]> {
-    try {
-      const response = await apiClient.get('/patients/');
-      return response.data;
-    } catch {
-      return getStoredData<Patient[]>(STORAGE_KEYS.PATIENTS, INITIAL_PATIENTS);
-    }
+    const response = await apiClient.get('/patients/');
+    return response.data;
   },
 
-  async getPatientById(id: string): Promise<Patient | null> {
-    try {
-      const response = await apiClient.get(`/patients/${id}/`);
-      return response.data;
-    } catch {
-      const patients = getStoredData<Patient[]>(STORAGE_KEYS.PATIENTS, INITIAL_PATIENTS);
-      return patients.find((p) => p.id === id) || null;
-    }
+  async getPatientById(id: string): Promise<Patient> {
+    const response = await apiClient.get(`/patients/${id}/`);
+    return response.data;
   },
 
   async createPatient(patientData: Omit<Patient, 'id' | 'mrn' | 'created_at'>): Promise<Patient> {
-    const newPatient: Patient = {
-      ...patientData,
-      id: 'pat-' + Date.now().toString(36),
-      mrn: 'MRN-' + Math.floor(10000 + Math.random() * 90000),
-      created_at: new Date().toISOString(),
-    };
-
-    try {
-      const response = await apiClient.post('/patients/', newPatient);
-      return response.data;
-    } catch {
-      const patients = getStoredData<Patient[]>(STORAGE_KEYS.PATIENTS, INITIAL_PATIENTS);
-      const updated = [newPatient, ...patients];
-      setStoredData(STORAGE_KEYS.PATIENTS, updated);
-      return newPatient;
-    }
+    const response = await apiClient.post('/patients/', patientData);
+    return response.data;
   },
 
   async updatePatient(id: string, updates: Partial<Patient>): Promise<Patient> {
-    try {
-      const response = await apiClient.patch(`/patients/${id}/`, updates);
-      return response.data;
-    } catch {
-      const patients = getStoredData<Patient[]>(STORAGE_KEYS.PATIENTS, INITIAL_PATIENTS);
-      const index = patients.findIndex((p) => p.id === id);
-      if (index === -1) throw new Error('Patient not found');
-      const updatedPatient = { ...patients[index], ...updates };
-      patients[index] = updatedPatient;
-      setStoredData(STORAGE_KEYS.PATIENTS, patients);
-      return updatedPatient;
-    }
+    const response = await apiClient.patch(`/patients/${id}/`, updates);
+    return response.data;
   },
 
   async deletePatient(id: string): Promise<void> {
-    try {
-      await apiClient.delete(`/patients/${id}/`);
-    } catch {
-      const patients = getStoredData<Patient[]>(STORAGE_KEYS.PATIENTS, INITIAL_PATIENTS);
-      const filtered = patients.filter((p) => p.id !== id);
-      setStoredData(STORAGE_KEYS.PATIENTS, filtered);
-    }
+    await apiClient.delete(`/patients/${id}/`);
   },
 };
 
@@ -260,7 +217,7 @@ export const dashboardApi = {
       const response = await apiClient.get('/dashboard/stats/');
       return response.data;
     } catch {
-      const patients = getStoredData<Patient[]>(STORAGE_KEYS.PATIENTS, INITIAL_PATIENTS);
+      const patients = await patientApi.getPatients().catch(() => [] as Patient[]);
       const reports = getStoredData<Report[]>(STORAGE_KEYS.REPORTS, INITIAL_REPORTS);
       const totalWords = reports.reduce((acc, r) => acc + (r.word_count || 0), 0);
 

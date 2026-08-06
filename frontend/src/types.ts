@@ -45,6 +45,8 @@ export interface Patient {
   address: string;
   emergency_contact: string;
   blood_group: string;
+  doctor?: string; // doctor's user id (owner)
+  doctor_name?: string;
   created_at: string;
 }
 
