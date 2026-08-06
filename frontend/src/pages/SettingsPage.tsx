@@ -21,10 +21,10 @@ export const SettingsPage: React.FC = () => {
   const { showSuccess, showError } = useToast();
 
   // Profile Form State
-  const [fullName, setFullName] = useState(user?.full_name || 'Dr. Sarah Jenkins');
-  const [email, setEmail] = useState(user?.email || 'dr.sarah.jenkins@medireport.org');
-  const [specialty, setSpecialty] = useState(user?.specialty || 'Internal Medicine & Cardiology');
-  const [licenseNumber, setLicenseNumber] = useState(user?.license_number || 'MD-94021-CA');
+  const [fullName, setFullName] = useState(user?.full_name || '');
+  const [email, setEmail] = useState(user?.email || '');
+  const [specialty, setSpecialty] = useState(user?.specialty || '');
+  const [licenseNumber, setLicenseNumber] = useState(user?.license_number || '');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   // Password Change Form State

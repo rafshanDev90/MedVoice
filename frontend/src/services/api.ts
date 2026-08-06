@@ -1,6 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { AuthTokens, LoginCredentials, Patient, Report, User, DashboardStats } from '../types';
-import { INITIAL_PATIENTS, INITIAL_REPORTS, INITIAL_STATS, INITIAL_USER } from '../data/initialData';
+import { INITIAL_PATIENTS, INITIAL_REPORTS } from '../data/initialData';
 
 const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 
@@ -95,28 +95,12 @@ if (!localStorage.getItem(STORAGE_KEYS.REPORTS)) {
 // Auth API
 export const authApi = {
   async login(credentials: LoginCredentials): Promise<{ tokens: AuthTokens; user: User }> {
-    try {
-      const response = await apiClient.post('/auth/login/', credentials);
-      const { access, refresh, user } = response.data;
-      localStorage.setItem('access_token', access);
-      localStorage.setItem('refresh_token', refresh);
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
-      return { tokens: { access, refresh }, user };
-    } catch {
-      // Fallback to local simulated auth for preview / offline mode
-      const simulatedTokens: AuthTokens = {
-        access: 'mock_jwt_access_token_' + Date.now(),
-        refresh: 'mock_jwt_refresh_token_' + Date.now(),
-      };
-      const user: User = {
-        ...INITIAL_USER,
-        email: credentials.email || INITIAL_USER.email,
-      };
-      localStorage.setItem('access_token', simulatedTokens.access);
-      localStorage.setItem('refresh_token', simulatedTokens.refresh);
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
-      return { tokens: simulatedTokens, user };
-    }
+    const response = await apiClient.post('/auth/login/', credentials);
+    const { access, refresh, user } = response.data;
+    localStorage.setItem('access_token', access);
+    localStorage.setItem('refresh_token', refresh);
+    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+    return { tokens: { access, refresh }, user };
   },
 
   async logout(): Promise<void> {
@@ -134,7 +118,7 @@ export const authApi = {
   },
 
   getCurrentUser(): User | null {
-    return getStoredData<User | null>(STORAGE_KEYS.USER, INITIAL_USER);
+    return getStoredData<User | null>(STORAGE_KEYS.USER, null);
   },
 };
 

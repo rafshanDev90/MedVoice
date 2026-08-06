@@ -1,8 +1,11 @@
-from django.urls import path
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+
+from .views import UserViewSet
 
 
 class HealthCheckView(APIView):
@@ -25,8 +28,17 @@ class HealthCheckView(APIView):
         })
 
 
+router = DefaultRouter()
+router.register('users', UserViewSet, basename='users')
+
 urlpatterns = [
     path('health/', HealthCheckView.as_view(), name='health-check'),
-    path('token/', TokenObtainPairView.as_view(), name='token-obtain'),
-    path('token/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
+    path('auth/register/', UserViewSet.as_view({'post': 'register'}), name='auth-register'),
+    path('auth/login/', UserViewSet.as_view({'post': 'login'}), name='auth-login'),
+    path('auth/logout/', UserViewSet.as_view({'post': 'logout'}), name='auth-logout'),
+    path('auth/me/', UserViewSet.as_view({'get': 'me', 'patch': 'me'}), name='auth-me'),
+    path('auth/change-password/', UserViewSet.as_view({'post': 'change_password'}), name='auth-change-password'),
+    path('auth/token/refresh/', TokenRefreshView.as_view(), name='auth-token-refresh'),
+    path('auth/token/', TokenObtainPairView.as_view(), name='auth-token-obtain'),
+    path('auth/', include(router.urls)),
 ]

@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     'drf_spectacular',
     'django_filters',
     'corsheaders',
+    'rest_framework_simplejwt.token_blacklist',
     'medical_api.apps.patients',
     'medical_api.apps.reports',
     'medical_api.apps.accounts',
@@ -94,6 +95,12 @@ SPECTACULAR_SETTINGS = {
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': True,
+    'TOKEN_OBTAIN_SERIALIZER': 'medical_api.apps.accounts.serializers.CustomTokenObtainPairSerializer',
+    'TOKEN_REFRESH_SERIALIZER': 'medical_api.apps.accounts.serializers.CustomTokenRefreshSerializer',
+    'TOKEN_BLACKLIST_SERIALIZER': 'rest_framework_simplejwt.serializers.TokenBlacklistSerializer',
 }
 
 LANGUAGE_CODE = 'en-us'

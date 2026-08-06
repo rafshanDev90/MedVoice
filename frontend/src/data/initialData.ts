@@ -1,16 +1,4 @@
-import { Patient, Report, User, DashboardStats } from '../types';
-
-export const INITIAL_USER: User = {
-  id: 'doc-101',
-  email: 'dr.sarah.jenkins@medireport.org',
-  first_name: 'Sarah',
-  last_name: 'Jenkins',
-  full_name: 'Dr. Sarah Jenkins',
-  role: 'doctor',
-  specialty: 'Internal Medicine & Cardiology',
-  license_number: 'MD-94021-CA',
-  avatar_url: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=250',
-};
+import { Patient, Report, DashboardStats } from '../types';
 
 export const INITIAL_PATIENTS: Patient[] = [
   {
