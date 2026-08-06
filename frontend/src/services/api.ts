@@ -1,7 +1,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { AuthTokens, LoginCredentials, Patient, Report, User, DashboardStats } from '../types';
 
-const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || '/api/v1';
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
