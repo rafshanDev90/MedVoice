@@ -17,9 +17,15 @@ class TranscriptionSerializer(serializers.ModelSerializer):
 
 
 class TranscriptionCreateSerializer(serializers.ModelSerializer):
+    model_size = serializers.CharField(write_only=True, required=False, default='base')
+
     class Meta:
         model = Transcription
         fields = ['patient', 'audio_file', 'language', 'model_size']
+
+    def create(self, validated_data):
+        validated_data['model_used'] = validated_data.pop('model_size', 'base')
+        return super().create(validated_data)
 
 
 class MedicalReportSerializer(serializers.ModelSerializer):

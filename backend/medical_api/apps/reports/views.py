@@ -18,19 +18,25 @@ from .serializers import (
 from .services import transcribe_audio, generate_excel_report, parse_soap_from_transcript
 
 
-class TranscriptionViewSet(viewsets.ViewSet):
+class TranscriptionViewSet(viewsets.ModelViewSet):
     parser_classes = [MultiPartParser, FormParser]
     permission_classes = [IsAuthenticated]
+    pagination_class = None
 
-    def create(self, request):
-        serializer = TranscriptionCreateSerializer(data=request.data)
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return TranscriptionCreateSerializer
+        return TranscriptionSerializer
+
+    def get_queryset(self):
+        return Transcription.objects.filter(doctor=self.request.user)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         patient = serializer.validated_data['patient']
         if patient.doctor != request.user:
-            return Response(
-                {'detail': 'Patient does not belong to you.'},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+            raise PermissionDenied('Patient does not belong to you.')
         audio_file = serializer.validated_data['audio_file']
         language = serializer.validated_data.get('language', '')
         model_size = serializer.validated_data.get('model_size', 'base')
@@ -44,12 +50,11 @@ class TranscriptionViewSet(viewsets.ViewSet):
             doctor=request.user,
             audio_file=audio_file,
             transcript=transcript,
-            language=detected_language,
             duration_seconds=duration,
+            language=detected_language,
             segments=segments,
             model_used=model_used,
         )
-
         return Response(TranscriptionSerializer(transcription).data, status=status.HTTP_201_CREATED)
 
 

@@ -225,42 +225,87 @@ Requires `Authorization: Bearer <token>`. Returns all medical reports for the pa
 
 ### 3. Speech Transcription
 
-#### Transcribe Audio
+All transcription endpoints require `Authorization: Bearer <token>`. The patient must belong to the logged-in doctor (returns 403 otherwise).
+
+#### Upload Audio for Transcription
 
 ```
-POST /api/v1/transcribe/
+POST /api/v1/transcriptions/
 ```
+
+Uploads an audio file, transcribes it using faster-whisper (or onnx-asr fallback), and returns the transcription result.
 
 **Content-Type:** `multipart/form-data`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
+| `patient` | integer | Yes | Patient ID (must belong to the doctor) |
 | `audio_file` | file | Yes | Audio file (WAV, MP3, M4A, FLAC) |
 | `language` | string | No | Language code (e.g., `en`, `es`). Auto-detected if omitted |
 | `model_size` | string | No | Whisper model: `tiny`, `base`, `small`, `medium`, `large` (default: `base`) |
 
-**Response (200)**
+**Response (201)**
 
 ```json
 {
-  "id": "txn_abc123",
+  "id": "a1b2c3d4-...",
+  "patient": 1,
+  "patient_name": "Jane Doe",
+  "patient_mrn": "MRN-TEST-01",
+  "doctor": 2,
+  "doctor_name": "dr_smith",
+  "doctor_id": 2,
   "transcript": "Patient reports chest pain for the last 3 days...",
   "language": "en",
   "duration_seconds": 45.2,
-  "segments": [
-    {
-      "start": 0.0,
-      "end": 12.5,
-      "text": "Patient reports chest pain for the last 3 days."
-    },
-    {
-      "start": 12.5,
-      "end": 45.2,
-      "text": "No history of hypertension or diabetes."
-    }
-  ]
+  "segments": [],
+  "model_used": "base",
+  "created_at": "2026-08-06T12:00:00Z"
 }
 ```
+
+#### List Transcriptions
+
+```
+GET /api/v1/transcriptions/
+```
+
+Returns only the logged-in doctor's transcriptions. No pagination — returns a full JSON array.
+
+**Response (200)**
+
+```json
+[
+  {
+    "id": "a1b2c3d4-...",
+    "patient_name": "Jane Doe",
+    "doctor_name": "dr_smith",
+    "transcript": "Patient reports...",
+    "language": "en",
+    "duration_seconds": 45.2,
+    "model_used": "base",
+    "created_at": "2026-08-06T12:00:00Z"
+  }
+]
+```
+
+#### Get Transcription Detail
+
+```
+GET /api/v1/transcriptions/{id}/
+```
+
+Returns 404 if the transcription doesn't belong to the logged-in doctor.
+
+**Response (200)** — Same as create response above.
+
+#### Delete Transcription
+
+```
+DELETE /api/v1/transcriptions/{id}/
+```
+
+Returns 204 No Content. Returns 404 if the transcription belongs to a different doctor.
 
 #### Transcribe Stream (WebSocket)
 
@@ -268,20 +313,7 @@ POST /api/v1/transcribe/
 WS /api/v1/transcribe/stream/
 ```
 
-**Frames (Client → Server)**
-
-| Type | Payload |
-|------|---------|
-| `audio_metadata` | `{"format": "wav", "sample_rate": 16000, "channels": 1}` |
-| `audio_chunk` | Binary PCM audio data (250ms chunks) |
-| `end_stream` | `{}` |
-
-**Frames (Server → Client)**
-
-| Type | Payload |
-|------|---------|
-| `partial` | `{"text": "Patient reports...", "segment_index": 0}` |
-| `final` | `{"text": "Full transcript text", "segments": [...]}` |
+The frontend WebSocket endpoint for real-time streaming transcription. The backend implementation is planned for a future phase. The frontend currently falls back to simulated transcription when the WebSocket is unavailable.
 
 ---
 

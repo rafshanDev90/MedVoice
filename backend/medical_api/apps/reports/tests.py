@@ -1,4 +1,6 @@
 from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
+from unittest.mock import patch
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -33,6 +35,7 @@ class ReportAPITests(APITestCase):
         )
         self.login_url = '/api/v1/auth/login/'
         self.reports_url = '/api/v1/reports/'
+        self.transcriptions_url = '/api/v1/transcriptions/'
 
     def _auth(self, user):
         r = self.client.post(self.login_url, {'username': user.username, 'password': 'Pass12345!'})
@@ -98,3 +101,70 @@ class ReportAPITests(APITestCase):
         r = self.client.delete(f'{self.reports_url}{self.report.id}/')
         self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(MedicalReport.objects.count(), 0)
+
+
+class TranscriptionAPITests(APITestCase):
+    def setUp(self):
+        self.doctor = User.objects.create_user(
+            username='dr_test', email='dr.test@medireport.org', password='Pass12345!',
+            role='doctor', first_name='Test', last_name='Doctor',
+        )
+        self.other = User.objects.create_user(
+            username='dr_other', email='dr.other@medireport.org', password='Pass12345!',
+            role='doctor', first_name='Other', last_name='Doctor',
+        )
+        self.patient = Patient.objects.create(
+            doctor=self.doctor, first_name='Jane', last_name='Doe',
+            date_of_birth='1990-01-01', gender='Female', medical_record_number='MRN-TEST-03',
+        )
+        self.other_patient = Patient.objects.create(
+            doctor=self.other, first_name='John', last_name='Doe',
+            date_of_birth='1985-06-15', gender='Male', medical_record_number='MRN-TEST-04',
+        )
+        self.login_url = '/api/v1/auth/login/'
+        self.transcriptions_url = '/api/v1/transcriptions/'
+
+    def _auth(self, user):
+        r = self.client.post(self.login_url, {'username': user.username, 'password': 'Pass12345!'})
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {r.data['access']}")
+
+    def test_anonymous_cannot_create_transcription(self):
+        r = self.client.post(self.transcriptions_url, {}, format='multipart')
+        self.assertEqual(r.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_doctor_cannot_transcribe_other_doctors_patient(self):
+        self._auth(self.doctor)
+        r = self.client.post(
+            self.transcriptions_url,
+            {'patient': str(self.other_patient.id), 'audio_file': SimpleUploadedFile('fake.wav', b'fake')},
+            format='multipart',
+        )
+        self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
+
+    @patch('medical_api.apps.reports.views.transcribe_audio')
+    def test_doctor_can_transcribe_own_patient(self, mock_transcribe):
+        mock_transcribe.return_value = ('Test transcript', [], 10.0, 'en', 'base')
+        self._auth(self.doctor)
+        r = self.client.post(
+            self.transcriptions_url,
+            {'patient': str(self.patient.id), 'audio_file': SimpleUploadedFile('fake.wav', b'fake'), 'language': 'en'},
+            format='multipart',
+        )
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(r.data['transcript'], 'Test transcript')
+        self.assertEqual(Transcription.objects.count(), 1)
+
+    @patch('medical_api.apps.reports.views.transcribe_audio')
+    def test_doctor_sees_only_own_transcriptions(self, mock_transcribe):
+        mock_transcribe.return_value = ('Other transcript', [], 5.0, 'en', 'base')
+        self._auth(self.doctor)
+        self.client.post(
+            self.transcriptions_url,
+            {'patient': str(self.patient.id), 'audio_file': SimpleUploadedFile('fake.wav', b'fake')},
+            format='multipart',
+        )
+        self._auth(self.other)
+        r = self.client.get(self.transcriptions_url)
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(r.data), 0)
